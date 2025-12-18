@@ -49,6 +49,7 @@ if len(df_final) > 10:
     # Get the latest data point
     latest_data = df_final.iloc[[-1]]
     prediction = model.predict(latest_data[features])[0]
+    st.write(f"DEBUG: Rainfall is {sim_rain}, Predicted Price is {sim_prediction}")
     
     # --- UI DISPLAY: METRICS ---
     col1, col2, col3 = st.columns(3)
@@ -107,4 +108,5 @@ if len(df_final) > 10:
 
 else:
     st.error("Not enough historical data for this specific market to make a prediction.")
+
 
