@@ -11,7 +11,7 @@ st.markdown("Predicting market prices using Historical Data and Weather context.
 # --- LOAD DATA ---
 @st.cache_data # This keeps the website fast by only loading data once
 def load_data():
-    df = pd.read_csv('Agri_Weather_Combined.csv')
+    df = pd.read_csv('Agri_Weather_Lite.csv')
     df['Price Date'] = pd.to_datetime(df['Price Date'])
     return df
 
@@ -73,4 +73,5 @@ if len(df_final) > 10:
     w_col2.write(f"**Recent Rainfall:** {latest_data['Rainfall (mm)'].values[0]} mm")
 
 else:
+
     st.error("Not enough historical data for this specific market to make a prediction.")
