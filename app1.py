@@ -11,7 +11,7 @@ st.markdown("Predicting market prices using Historical Data and Weather context.
 # --- LOAD DATA ---
 @st.cache_data
 def load_data():
-    df = pd.read_csv('Agri_Weather_Combined.csv')
+    df = pd.read_csv('Agri_Weather_Lite.csv')
     df['Price Date'] = pd.to_datetime(df['Price Date'])
     return df
 
@@ -106,4 +106,5 @@ if len(df_final) > 10:
             st.write("No significant price change detected for these parameters.")
 
 else:
+
     st.error("Not enough historical data for this specific market to make a prediction.")
