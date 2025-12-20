@@ -13,16 +13,64 @@ AGMARK_API_KEY = "579b464db66ec23bdd00000153830512e3d048f848bcb6701db55152"
 
 # Static Coordinates for the Map (Hackathon Ready)
 CITY_COORDS = {
+   # --- MAHARASHTRA ---
     "Maharashtra": {"lat": 19.7515, "lon": 75.7139},
     "Nagpur": {"lat": 21.1458, "lon": 79.0882},
     "Pune": {"lat": 18.5204, "lon": 73.8567},
+    "Mumbai": {"lat": 19.0760, "lon": 72.8777},
     "Nashik": {"lat": 20.0050, "lon": 73.7889},
     "Amravati": {"lat": 20.9320, "lon": 77.7523},
+    "Aurangabad": {"lat": 19.8762, "lon": 75.3433},
+    "Kolhapur": {"lat": 16.7050, "lon": 74.2433},
+    "Solapur": {"lat": 17.6599, "lon": 75.9064},
+
+    # --- KARNATAKA ---
     "Karnataka": {"lat": 15.3173, "lon": 75.7139},
     "Bangalore": {"lat": 12.9716, "lon": 77.5946},
     "Mysore": {"lat": 12.2958, "lon": 76.6394},
+    "Hubli": {"lat": 15.3647, "lon": 75.1240},
+    "Belgaum": {"lat": 15.8497, "lon": 74.4977},
+    "Gulbarga": {"lat": 17.3297, "lon": 76.8343},
+
+    # --- UTTAR PRADESH ---
     "Uttar Pradesh": {"lat": 26.8467, "lon": 80.9462},
     "Lucknow": {"lat": 26.8467, "lon": 80.9462},
+    "Kanpur": {"lat": 26.4499, "lon": 80.3319},
+    "Agra": {"lat": 27.1767, "lon": 78.0081},
+    "Varanasi": {"lat": 25.3176, "lon": 82.9739},
+    "Meerut": {"lat": 28.9845, "lon": 77.7064},
+    "Bareilly": {"lat": 28.3670, "lon": 79.4304},
+
+    # --- PUNJAB & HARYANA ---
+    "Punjab": {"lat": 31.1471, "lon": 75.3412},
+    "Ludhiana": {"lat": 30.9010, "lon": 75.8573},
+    "Amritsar": {"lat": 31.6340, "lon": 74.8723},
+    "Haryana": {"lat": 29.0588, "lon": 76.0856},
+    "Karnal": {"lat": 29.6857, "lon": 76.9907},
+
+    # --- GUJARAT ---
+    "Gujarat": {"lat": 22.2587, "lon": 71.1924},
+    "Ahmedabad": {"lat": 23.0225, "lon": 72.5714},
+    "Surat": {"lat": 21.1702, "lon": 72.8311},
+    "Rajkot": {"lat": 22.3039, "lon": 70.8022},
+
+    # --- MADHYA PRADESH ---
+    "Madhya Pradesh": {"lat": 22.9734, "lon": 78.6569},
+    "Indore": {"lat": 22.7196, "lon": 75.8577},
+    "Bhopal": {"lat": 23.2599, "lon": 77.4126},
+    "Gwalior": {"lat": 26.2183, "lon": 78.1828},
+
+    # --- RAJASTHAN ---
+    "Rajasthan": {"lat": 27.0238, "lon": 74.2179},
+    "Jaipur": {"lat": 26.9124, "lon": 75.7873},
+    "Jodhpur": {"lat": 26.2389, "lon": 73.0243},
+    "Kota": {"lat": 25.2138, "lon": 75.8648},
+
+    # --- ANDHRA PRADESH & TELANGANA ---
+    "Andhra Pradesh": {"lat": 15.9129, "lon": 79.7400},
+    "Vijayawada": {"lat": 16.5062, "lon": 80.6480},
+    "Telangana": {"lat": 18.1124, "lon": 79.0193},
+    "Hyderabad": {"lat": 17.3850, "lon": 78.4867},
 }
 
 st.set_page_config(page_title="Nada Harvest AI", layout="wide")
@@ -98,9 +146,14 @@ def display_map_and_arbitrage(df_base, selected_state, selected_commodity, selec
 
     # 2. COORDINATE ASSIGNMENT
     def get_coords(row, key):
-        # Checks if market exists in dict, if not, uses State center
-        data = CITY_COORDS.get(row['MARKET'], CITY_COORDS.get(row['STATE'], {"lat": 20, "lon": 78}))
-        return data[key]
+    # 1. Try to find the specific Market Name
+        if row['MARKET'] in CITY_COORDS:
+            return CITY_COORDS[row['MARKET']][key]
+    # 2. If Market not found, use the State center
+        if row['STATE'] in CITY_COORDS:
+            return CITY_COORDS[row['STATE']][key]
+    # 3. Ultimate fallback: Center of India
+        return 20.5937 if key == 'lat' else 78.9629
 
     map_df['lat'] = map_df.apply(lambda r: get_coords(r, 'lat'), axis=1) 
     map_df['lon'] = map_df.apply(lambda r: get_coords(r, 'lon'), axis=1)
