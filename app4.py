@@ -78,7 +78,7 @@ def fetch_live_prices(comm, state, market):
     except: pass
     return pd.DataFrame()
 
-def display_map_and_arbitrage(df_all):
+'''def display_map_and_arbitrage(df_all):
     st.write("---")
     st.subheader("🌐 Regional Price Heatmap")
     
@@ -103,8 +103,62 @@ def display_map_and_arbitrage(df_all):
     top_market = map_df.sort_values('PRICE', ascending=False).iloc[0]
     current_p = map_df[map_df['MARKET'] == selected_market]['PRICE'].mean()
     if top_market['PRICE'] > current_p:
-        st.warning(f"🚀 **Arbitrage Alert:** Potential profit of ₹{top_market['PRICE'] - current_p:.2f}/quintal found in **{top_market['MARKET']}**!")
+        st.warning(f"🚀 **Arbitrage Alert:** Potential profit of ₹{top_market['PRICE'] - current_p:.2f}/quintal found in **{top_market['MARKET']}**!")'''
+def display_map_and_arbitrage(df_base, selected_state, selected_commodity, selected_market, current_price):
+    st.write("---")
+    st.subheader(f"🌐 Regional Prices for {selected_commodity} in {selected_state}")
+    
+    # 1. CRITICAL CHANGE: Filter for ALL markets in the state for the chosen commodity
+    # This ensures multiple dots appear on the map
+    map_df = df_base[
+        (df_base['STATE'] == selected_state) & 
+        (df_base['COMMODITY'] == selected_commodity)
+    ].copy()
+    
+    # Get the most recent date available in this state
+    latest_date = map_df['DATE'].max()
+    map_df = map_df[map_df['DATE'] == latest_date]
 
+    if map_df.empty:
+        st.warning("No nearby market data found for this commodity today.")
+        return
+
+    # 2. COORDINATE ASSIGNMENT
+    def get_coords(row, key):
+        # Checks if market exists in dict, if not, uses State center
+        data = CITY_COORDS.get(row['MARKET'], CITY_COORDS.get(row['STATE'], {"lat": 20, "lon": 78}))
+        return data[key]
+
+    map_df['lat'] = map_df.apply(lambda r: get_coords(r, 'lat'), axis=1) 
+    map_df['lon'] = map_df.apply(lambda r: get_coords(r, 'lon'), axis=1)
+    
+    # Add "Jitter" so multiple markets in one city don't stack perfectly
+    map_df['lat'] += np.random.uniform(-0.15, 0.15, len(map_df))
+    map_df['lon'] += np.random.uniform(-0.15, 0.15, len(map_df))
+
+    # 3. PLOT ALL MARKETS
+    fig = px.scatter_mapbox(
+        map_df, 
+        lat="lat", 
+        lon="lon", 
+        size="PRICE", 
+        color="PRICE",
+        color_continuous_scale=px.colors.sequential.YlOrRd,
+        hover_name="MARKET", 
+        hover_data={"PRICE": True, "lat": False, "lon": False},
+        zoom=5, 
+        mapbox_style="carto-positron"
+    )
+    fig.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
+    st.plotly_chart(fig, use_container_width=True)
+
+    # 4. ARBITRAGE CALCULATION
+    top_market = map_df.sort_values('PRICE', ascending=False).iloc[0]
+    
+    if top_market['MARKET'] != selected_market:
+        diff = top_market['PRICE'] - current_price
+        if diff > 0:
+            st.success(f"🚀 **Arbitrage Alert:** Potential profit of **₹{diff:.2f}/quintal** found in **{top_market['MARKET']}**!")
 # --- 4. MAIN ACTION ---
 if st.sidebar.button("🔄 Sync & Predict"):
     df_hist = market_df[market_df['COMMODITY'] == selected_commodity].copy()
@@ -146,12 +200,18 @@ if st.sidebar.button("🔄 Sync & Predict"):
             df_ml['Predicted'] = active_model.predict(X)
             st.plotly_chart(px.line(df_ml, x='DATE', y=['PRICE', 'Predicted'], title="Price Trend"), use_container_width=True)
         with c2:
+            display_map_and_arbitrage(
+            df_base, 
+            selected_state, 
+            selected_commodity, 
+            selected_market, 
+            curr_price)
             st.subheader("📅 7-Day Prediction")
             st.table(pd.DataFrame(forecast))
             st.metric("Model Accuracy (R²)", f"{r2_score(y, active_model.predict(X)):.3f}")
 
         # Integrated Map Feature
-        display_map_and_arbitrage(df_master)
+       
     else:
         st.warning("Insufficient data for AI training.")
 else:
