@@ -7,7 +7,8 @@ from sklearn.ensemble import RandomForestRegressor
 from xgboost import XGBRegressor
 from sklearn.metrics import r2_score
 from datetime import timedelta
-
+st.write("Is this working?")
+st.stop() # This forces the app to stop here and show the message
 # --- CONFIGURATION ---
 AGMARK_API_KEY = "579b464db66ec23bdd00000153830512e3d048f848bcb6701db55152"
 WEATHER_API_KEY = "2N9PMG25KADQ6GE3KMJVHE9XW"
@@ -129,4 +130,5 @@ if st.sidebar.button("🔄 Sync Market & Predict"):
             st.success(f"Winner: {best}")
 
     # Step 3 visualization: Show that data was added
+
     st.info(f"Total data points analyzed: {len(df_updated)} (Updated with live API data)")
