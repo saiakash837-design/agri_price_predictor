@@ -45,7 +45,7 @@ def fetch_and_clean_weather(location):
     return pd.DataFrame()
 
 # --- STEP 3: MASTER MERGE ---
-def get_updated_dataset(df_original, df_p, df_w, crop):
+'''def get_updated_dataset(df_original, df_p, df_w, crop):
     if df_p.empty or df_w.empty:
         return df_original[df_original['Commodity'] == crop]
     
@@ -66,8 +66,46 @@ try:
     df_main['DATE'] = pd.to_datetime(df_main[date_col])
 except Exception as e:
     st.error(f"CSV Load Error: {e}. Please ensure 'Agri_Weather_Lite.csv' is in your directory.")
-    st.stop()
+    st.stop()'''
+# --- 1. UPDATE THE MASTER MERGE (Step 3) ---
+def get_updated_dataset(df_original, df_p, df_w, crop):
+    # Ensure the original dataframe uses 'PRICE' instead of 'Modal_Price'
+    if 'Modal_Price' in df_original.columns:
+        df_original = df_original.rename(columns={'Modal_Price': 'PRICE'})
+    
+    if df_p.empty or df_w.empty:
+        return df_original[df_original['Commodity'] == crop]
+    
+    # Standardize API Price column just in case
+    df_p = df_p.rename(columns={'modal_price': 'PRICE'})
+    
+    api_combined = pd.merge(df_p, df_w, on='DATE', how='inner')
+    api_combined['Commodity'] = crop
+    
+    # Combine
+    df_combined = pd.concat([df_original, api_combined], ignore_index=True)
+    
+    # Final Rename check to be 100% safe before returning
+    df_combined = df_combined.rename(columns={'Modal_Price': 'PRICE'})
+    
+    df_combined = df_combined.drop_duplicates(subset=['DATE', 'DISTRICT', 'Commodity']).sort_values('DATE')
+    return df_combined
 
+# --- 2. UPDATE THE INITIAL LOAD SECTION ---
+try:
+    df_main = pd.read_csv('Agri_Weather_Lite.csv')
+    
+    # CRITICAL FIX: Rename Modal_Price to PRICE immediately after loading
+    if 'Modal_Price' in df_main.columns:
+        df_main = df_main.rename(columns={'Modal_Price': 'PRICE'})
+    
+    # Handle Date column
+    date_col = 'Price Date' if 'Price Date' in df_main.columns else 'DATE'
+    df_main['DATE'] = pd.to_datetime(df_main[date_col])
+    
+except Exception as e:
+    st.error(f"CSV Load Error: {e}")
+    st.stop()
 crop = st.sidebar.selectbox("Choose Crop", df_main['Commodity'].unique())
 location = st.sidebar.text_input("Enter District (e.g., Nagpur)", "Nagpur")
 model_choice = st.sidebar.radio("Select Prediction Engine", ["Random Forest", "XGBoost"])
@@ -152,3 +190,4 @@ if st.sidebar.button("🔄 Sync Market & Predict"):
                     st.success("Random Forest is the recommended engine.")
 
             st.info(f"Analysis based on {len(df_updated)} historical and live data points.")
+
