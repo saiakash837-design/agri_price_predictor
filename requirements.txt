@@ -1,7 +1,9 @@
 streamlit
 pandas
-numpy
 requests
+numpy
+plotly
 scikit-learn
 xgboost
-plotly
+lightgbm
+prophet
