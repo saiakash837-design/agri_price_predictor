@@ -77,33 +77,6 @@ def fetch_live_prices(comm, state, market):
             return df_api[['DATE', 'PRICE']]
     except: pass
     return pd.DataFrame()
-
-'''def display_map_and_arbitrage(df_all):
-    st.write("---")
-    st.subheader("🌐 Regional Price Heatmap")
-    
-    # Map Processing
-    latest_date = df_all['DATE'].max()
-    map_df = df_all[df_all['DATE'] == latest_date].copy()
-    
-    def get_coords(row, key):
-        data = CITY_COORDS.get(row['MARKET'], CITY_COORDS.get(row['STATE'], {"lat": 20, "lon": 78}))
-        return data[key]
-
-    map_df['lat'] = map_df.apply(lambda r: get_coords(r, 'lat'), axis=1) + np.random.uniform(-0.1, 0.1, len(map_df))
-    map_df['lon'] = map_df.apply(lambda r: get_coords(r, 'lon'), axis=1) + np.random.uniform(-0.1, 0.1, len(map_df))
-
-    fig = px.scatter_mapbox(map_df, lat="lat", lon="lon", size="PRICE", color="PRICE",
-                            color_continuous_scale=px.colors.sequential.YlOrRd,
-                            hover_name="MARKET", zoom=4, mapbox_style="carto-positron")
-    fig.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
-    st.plotly_chart(fig, use_container_width=True)
-
-    # Arbitrage Alert
-    top_market = map_df.sort_values('PRICE', ascending=False).iloc[0]
-    current_p = map_df[map_df['MARKET'] == selected_market]['PRICE'].mean()
-    if top_market['PRICE'] > current_p:
-        st.warning(f"🚀 **Arbitrage Alert:** Potential profit of ₹{top_market['PRICE'] - current_p:.2f}/quintal found in **{top_market['MARKET']}**!")'''
 def display_map_and_arbitrage(df_base, selected_state, selected_commodity, selected_market, current_price):
     st.write("---")
     st.subheader(f"🌐 Regional Prices for {selected_commodity} in {selected_state}")
