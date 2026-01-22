@@ -137,7 +137,8 @@ if st.sidebar.button("🔄 Sync & Predict"):
         df_ml = df_master.dropna()
 
         if len(df_ml) > 12:
-            features = ['month', 'dayofweek', 'lag_1', 'lag_7','Humidity','Temparature','Rainfall']
+            #features = ['month', 'dayofweek', 'lag_1', 'lag_7','Humidity','Temparature','Rainfall']
+            features = ['month', 'dayofweek', 'lag_1', 'lag_7']
             X, y = df_ml[features], df_ml['PRICE']
             
             # Model Training
