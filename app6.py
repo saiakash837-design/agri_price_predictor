@@ -97,40 +97,51 @@ def haversine(lat1, lon1, lat2, lon2):
     dlat, dlon = radians(lat2-lat1), radians(lon2-lon1)
     a = sin(dlat/2)**2 + cos(radians(lat1)) * cos(radians(lat2)) * sin(dlon/2)**2
     return 2 * R * asin(sqrt(a))
-
 def display_map_and_arbitrage(df_base, selected_state, selected_commodity, selected_market, current_price):
     st.write("---")
     st.subheader(f"🌐 Regional Opportunity Map: {selected_commodity}")
     
-    # 1. Get current market coordinates
-    curr_coords = CITY_COORDS.get(selected_market, CITY_COORDS.get(selected_state))
+    # 1. Improved Coordinate Retrieval with Safe Fallback
+    # Try Market -> Try State -> Default to Center of India
+    default_coords = {"lat": 20.5937, "lon": 78.9629}
+    curr_coords = CITY_COORDS.get(selected_market, CITY_COORDS.get(selected_state, default_coords))
     
     # 2. Filter data for the same state/commodity
     map_df = df_base[(df_base['STATE'] == selected_state) & (df_base['COMMODITY'] == selected_commodity)].copy()
+    if map_df.empty:
+        st.warning("No regional data available for mapping.")
+        return
+
     latest_date = map_df['DATE'].max()
     map_df = map_df[map_df['DATE'] == latest_date]
 
-    if not map_df.empty:
-        # 3. Map Coordinates properly
-        map_df['lat'] = map_df['MARKET'].map(lambda x: CITY_COORDS.get(x, {}).get('lat', curr_coords['lat']))
-        map_df['lon'] = map_df['MARKET'].map(lambda x: CITY_COORDS.get(x, {}).get('lon', curr_coords['lon']))
-        
-        # 4. Calculate Distance and Net Profit
-        map_df['distance_km'] = map_df.apply(lambda r: haversine(curr_coords['lat'], curr_coords['lon'], r['lat'], r['lon']), axis=1)
-        
-        # 5. Visualizations
-        fig = px.scatter_mapbox(map_df, lat="lat", lon="lon", size="PRICE", color="PRICE", 
-                                hover_name="MARKET", hover_data=["PRICE", "distance_km"],
-                                color_continuous_scale="YlOrRd", zoom=6, mapbox_style="carto-positron")
-        st.plotly_chart(fig, use_container_width=True)
+    # 3. Map Coordinates properly with lambda safety
+    # We use .get(..., default_coords) inside the lambda to ensure every row has a lat/lon
+    map_df['lat'] = map_df['MARKET'].apply(lambda x: CITY_COORDS.get(x, CITY_COORDS.get(selected_state, default_coords))['lat'])
+    map_df['lon'] = map_df['MARKET'].apply(lambda x: CITY_COORDS.get(x, CITY_COORDS.get(selected_state, default_coords))['lon'])
+    
+    # Add a tiny bit of random jitter so markers don't overlap if they share the same state coord
+    map_df['lat'] += np.random.uniform(-0.05, 0.05, len(map_df))
+    map_df['lon'] += np.random.uniform(-0.05, 0.05, len(map_df))
 
-        # 6. Improved Arbitrage Alert
-        # Filter for markets that are actually different and higher price
-        better_markets = map_df[(map_df['MARKET'] != selected_market) & (map_df['PRICE'] > current_price)].sort_values('PRICE', ascending=False)
-        
-        if not better_markets.empty:
-            top_m = better_markets.iloc[0]
-            st.success(f"🚀 **Arbitrage:** **{top_m['MARKET']}** is offering **₹{top_m['PRICE'] - current_price:.2f}** more! (Approx. **{top_m['distance_km']:.0f} km** away)")
+    # 4. Calculate Distance
+    map_df['distance_km'] = map_df.apply(lambda r: haversine(curr_coords['lat'], curr_coords['lon'], r['lat'], r['lon']), axis=1)
+    
+    # 5. Visualizations
+    fig = px.scatter_mapbox(
+        map_df, lat="lat", lon="lon", size="PRICE", color="PRICE", 
+        hover_name="MARKET", hover_data=["PRICE", "distance_km"],
+        color_continuous_scale="YlOrRd", zoom=6, mapbox_style="carto-positron"
+    )
+    fig.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
+    st.plotly_chart(fig, use_container_width=True)
+
+    # 6. Improved Arbitrage Alert
+    better_markets = map_df[(map_df['MARKET'] != selected_market) & (map_df['PRICE'] > current_price)].sort_values('PRICE', ascending=False)
+    
+    if not better_markets.empty:
+        top_m = better_markets.iloc[0]
+        st.success(f"🚀 **Arbitrage Opportunity:** **{top_m['MARKET']}** is offering **₹{top_m['PRICE'] - current_price:.2f}** more per quintal! (Approx. **{top_m['distance_km']:.0f} km** away)")
 
 show_hero()
 
