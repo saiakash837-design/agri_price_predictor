@@ -46,6 +46,7 @@ def show_hero():
 def load_base_data():
     try:
         df = pd.read_csv('Agri_Weather_Lite.csv')
+        df.columns = df.columns.str.strip()
         name_map = {
             'Price Date': 'DATE', 'Modal_Price': 'PRICE', 
             'Market Name': 'MARKET', 'STATE': 'STATE', 
