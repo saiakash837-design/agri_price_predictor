@@ -50,7 +50,10 @@ def load_base_data():
         df = pd.read_csv('Agri_Weather_Lite.csv')
         name_map = {'Price Date': 'DATE', 'Modal_Price': 'PRICE', 'Market Name': 'MARKET', 'STATE': 'STATE', 'Commodity': 'COMMODITY'}
         df = df.rename(columns={k: v for k, v in name_map.items() if k in df.columns})
-        df['DATE'] = pd.to_datetime(df['DATE'])
+        
+        # Explicitly specify the format: DD-MM-YYYY
+        df['DATE'] = pd.to_datetime(df['DATE'], format='%d-%m-%Y')
+        
         return df.dropna(subset=['PRICE'])
     except Exception as e:
         st.error(f"Error loading CSV: {e}")
