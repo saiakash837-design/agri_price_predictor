@@ -144,7 +144,7 @@ if st.sidebar.button("🔄 Sync & Predict"):
         
       # --- REVISED CLEANING BLOCK ---
 # Define all potential features we WANT to use
-       required_cols = ['PRICE', 'lag_1', 'lag_7', 'Humidity', 'Temperature', 'Rainfall']
+        required_cols = ['PRICE', 'lag_1', 'lag_7', 'Humidity', 'Temperature', 'Rainfall']
 
 # Filter the list to only include columns that actually exist in df_master
         existing_subset = [col for col in required_cols if col in df_master.columns]
