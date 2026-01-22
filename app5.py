@@ -44,20 +44,19 @@ def show_hero():
     col1.metric("Live Market Sync", "Active", "Government API")
     col2.metric("AI Models", "4 Engines", "Ensemble Active")
     col3.metric("Coverage", "National", "All States")
-
-# --- 1. DATA LOADING ---
 @st.cache_data
 def load_base_data():
     try:
-        script_dir = os.path.dirname(os.path.abspath(__file__))
-        csv_path = os.path.join(script_dir, 'Agri_Weather_Lite.csv')
-        df = pd.read_csv('csv_path')
+        df = pd.read_csv('Agri_Weather_Lite.csv')
         name_map = {'Price Date': 'DATE', 'Modal_Price': 'PRICE', 'Market Name': 'MARKET', 'STATE': 'STATE', 'Commodity': 'COMMODITY'}
         df = df.rename(columns={k: v for k, v in name_map.items() if k in df.columns})
         df['DATE'] = pd.to_datetime(df['DATE'])
         return df.dropna(subset=['PRICE'])
-    except:
+    except Exception as e:
+        st.error(f"Error loading CSV: {e}")
         return pd.DataFrame()
+# --- 1. DATA LOADING ---
+
 
 df_base = load_base_data()
 
