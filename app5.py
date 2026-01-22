@@ -9,6 +9,7 @@ from lightgbm import LGBMRegressor
 from prophet import Prophet
 from sklearn.metrics import r2_score
 from datetime import timedelta
+import os
 
 # --- CONFIGURATION & SETTINGS ---
 st.set_page_config(page_title="Nada Harvest AI", layout="wide", page_icon="🌾")
@@ -48,7 +49,9 @@ def show_hero():
 @st.cache_data
 def load_base_data():
     try:
-        df = pd.read_csv('Agri_Weather_Lite.csv')
+         script_dir = os.path.dirname(os.path.abspath(__file__))
+        csv_path = os.path.join(script_dir, 'Agri_Weather_Lite.csv')
+        df = pd.read_csv('csv_path')
         name_map = {'Price Date': 'DATE', 'Modal_Price': 'PRICE', 'Market Name': 'MARKET', 'STATE': 'STATE', 'Commodity': 'COMMODITY'}
         df = df.rename(columns={k: v for k, v in name_map.items() if k in df.columns})
         df['DATE'] = pd.to_datetime(df['DATE'])
