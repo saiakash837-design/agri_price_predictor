@@ -144,17 +144,16 @@ if st.sidebar.button("🔄 Sync & Predict"):
         
       # --- REVISED CLEANING BLOCK ---
 # Define all potential features we WANT to use
-required_cols = ['PRICE', 'lag_1', 'lag_7', 'Humidity', 'Temperature', 'Rainfall']
+       required_cols = ['PRICE', 'lag_1', 'lag_7', 'Humidity', 'Temperature', 'Rainfall']
 
 # Filter the list to only include columns that actually exist in df_master
-existing_subset = [col for col in required_cols if col in df_master.columns]
+        existing_subset = [col for col in required_cols if col in df_master.columns]
 
 # Now drop rows only using columns that are present
-df_ml = df_master.dropna(subset=existing_subset)
+        df_ml = df_master.dropna(subset=existing_subset)
 
 # Double-check: We also need to make sure 'features' only includes existing columns
-features = [f for f in ['month', 'dayofweek', 'lag_1', 'lag_7', 'Humidity', 'Temperature', 'Rainfall', 'Comm_Code'] 
-            if f in df_ml.columns]
+        features = [f for f in ['month', 'dayofweek', 'lag_1', 'lag_7', 'Humidity', 'Temperature', 'Rainfall', 'Comm_Code']  if f in df_ml.columns]
 
         if len(df_ml) > 12:
             features = ['month', 'dayofweek', 'lag_1', 'lag_7', 'Humidity', 'Temperature', 'Rainfall', 'Comm_Code']
