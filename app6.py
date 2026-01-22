@@ -89,24 +89,48 @@ def fetch_live_prices(comm, state, market):
             return df_api[['DATE', 'PRICE']]
     except: pass
     return pd.DataFrame()
+from math import radians, cos, sin, asin, sqrt
+
+# Add a Haversine function to calculate actual distance
+def haversine(lat1, lon1, lat2, lon2):
+    R = 6371 # Earth radius in km
+    dlat, dlon = radians(lat2-lat1), radians(lon2-lon1)
+    a = sin(dlat/2)**2 + cos(radians(lat1)) * cos(radians(lat2)) * sin(dlon/2)**2
+    return 2 * R * asin(sqrt(a))
 
 def display_map_and_arbitrage(df_base, selected_state, selected_commodity, selected_market, current_price):
     st.write("---")
     st.subheader(f"🌐 Regional Opportunity Map: {selected_commodity}")
+    
+    # 1. Get current market coordinates
+    curr_coords = CITY_COORDS.get(selected_market, CITY_COORDS.get(selected_state))
+    
+    # 2. Filter data for the same state/commodity
     map_df = df_base[(df_base['STATE'] == selected_state) & (df_base['COMMODITY'] == selected_commodity)].copy()
+    latest_date = map_df['DATE'].max()
+    map_df = map_df[map_df['DATE'] == latest_date]
+
     if not map_df.empty:
-        latest_date = map_df['DATE'].max()
-        map_df = map_df[map_df['DATE'] == latest_date]
-        def get_coords(row, key):
-            data = CITY_COORDS.get(row['MARKET'], CITY_COORDS.get(row['STATE'], {"lat": 20.5937, "lon": 78.9629}))
-            return data[key]
-        map_df['lat'] = map_df.apply(lambda r: get_coords(r, 'lat'), axis=1) + np.random.uniform(-0.1, 0.1, len(map_df))
-        map_df['lon'] = map_df.apply(lambda r: get_coords(r, 'lon'), axis=1) + np.random.uniform(-0.1, 0.1, len(map_df))
-        fig = px.scatter_mapbox(map_df, lat="lat", lon="lon", size="PRICE", color="PRICE", color_continuous_scale="YlOrRd", zoom=5, mapbox_style="carto-positron")
+        # 3. Map Coordinates properly
+        map_df['lat'] = map_df['MARKET'].map(lambda x: CITY_COORDS.get(x, {}).get('lat', curr_coords['lat']))
+        map_df['lon'] = map_df['MARKET'].map(lambda x: CITY_COORDS.get(x, {}).get('lon', curr_coords['lon']))
+        
+        # 4. Calculate Distance and Net Profit
+        map_df['distance_km'] = map_df.apply(lambda r: haversine(curr_coords['lat'], curr_coords['lon'], r['lat'], r['lon']), axis=1)
+        
+        # 5. Visualizations
+        fig = px.scatter_mapbox(map_df, lat="lat", lon="lon", size="PRICE", color="PRICE", 
+                                hover_name="MARKET", hover_data=["PRICE", "distance_km"],
+                                color_continuous_scale="YlOrRd", zoom=6, mapbox_style="carto-positron")
         st.plotly_chart(fig, use_container_width=True)
-        top_m = map_df.sort_values('PRICE', ascending=False).iloc[0]
-        if top_m['MARKET'] != selected_market and top_m['PRICE'] > current_price:
-            st.success(f"🚀 **Arbitrage Opportunity:** Earn **₹{top_m['PRICE'] - current_price:.2f}/quintal** more in **{top_m['MARKET']}**!")
+
+        # 6. Improved Arbitrage Alert
+        # Filter for markets that are actually different and higher price
+        better_markets = map_df[(map_df['MARKET'] != selected_market) & (map_df['PRICE'] > current_price)].sort_values('PRICE', ascending=False)
+        
+        if not better_markets.empty:
+            top_m = better_markets.iloc[0]
+            st.success(f"🚀 **Arbitrage:** **{top_m['MARKET']}** is offering **₹{top_m['PRICE'] - current_price:.2f}** more! (Approx. **{top_m['distance_km']:.0f} km** away)")
 
 show_hero()
 
