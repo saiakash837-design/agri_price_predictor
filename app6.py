@@ -55,7 +55,7 @@ def load_base_data():
             'Market Name': 'MARKET', 
             'STATE': 'STATE', 
             'Commodity': 'COMMODITY',
-            'Temparature': 'Temperature' # Fixing potential typos in CSV headers
+            'Temparature': 'Temperature' 
         }
         df = df.rename(columns=name_map)
         df['DATE'] = pd.to_datetime(df['DATE'], format='%d-%m-%Y')
@@ -138,33 +138,25 @@ if st.sidebar.button("🔄 Sync & Predict"):
         df_master['dayofweek'] = df_master['DATE'].dt.dayofweek
         df_master['lag_1'] = df_master['PRICE'].shift(1)
         df_master['lag_7'] = df_master['PRICE'].shift(7)
-        
-        # Encoding Commodity for ML models
         df_master['Comm_Code'] = df_master['COMMODITY'].astype('category').cat.codes
         
-      # --- REVISED CLEANING BLOCK ---
-# Define all potential features we WANT to use
-        required_cols = ['PRICE', 'lag_1', 'lag_7', 'Humidity', 'Temperature', 'Rainfall']
-
-# Filter the list to only include columns that actually exist in df_master
-        existing_subset = [col for col in required_cols if col in df_master.columns]
-
-# Now drop rows only using columns that are present
-        df_ml = df_master.dropna(subset=existing_subset)
-
-# Double-check: We also need to make sure 'features' only includes existing columns
-        features = [f for f in ['month', 'dayofweek', 'lag_1', 'lag_7', 'Humidity', 'Temperature', 'Rainfall', 'Comm_Code']  if f in df_ml.columns]
+        # --- DYNAMIC FEATURE HANDLING ---
+        potential_features = ['month', 'dayofweek', 'lag_1', 'lag_7', 'Humidity', 'Temperature', 'Rainfall', 'Comm_Code']
+        # Only use columns that exist in the CSV/Dataframe
+        existing_features = [f for f in potential_features if f in df_master.columns]
+        # Columns that MUST be non-null for the ML model to train
+        dropna_subset = [f for f in ['PRICE', 'lag_1', 'lag_7'] if f in existing_features] + ['PRICE']
+        
+        df_ml = df_master.dropna(subset=dropna_subset)
 
         if len(df_ml) > 12:
-            features = ['month', 'dayofweek', 'lag_1', 'lag_7', 'Humidity', 'Temperature', 'Rainfall', 'Comm_Code']
-            X, y = df_ml[features], df_ml['PRICE']
+            X, y = df_ml[existing_features], df_ml['PRICE']
             
             # Model Training
             rf = RandomForestRegressor(n_estimators=100).fit(X, y)
             xgb = XGBRegressor(n_estimators=100, learning_rate=0.05).fit(X, y)
             lgb = LGBMRegressor(n_estimators=100, learning_rate=0.05, verbose=-1).fit(X, y)
             
-            # Prophet (Only uses date and price)
             df_p = df_ml[['DATE', 'PRICE']].rename(columns={'DATE': 'ds', 'PRICE': 'y'})
             prophet_model = Prophet(yearly_seasonality=True, daily_seasonality=False).fit(df_p)
 
@@ -173,72 +165,4 @@ if st.sidebar.button("🔄 Sync & Predict"):
             forecast_data = []
             c_rf, c_xgb, c_lgb = last_row['PRICE'], last_row['PRICE'], last_row['PRICE']
             
-            p_future = prophet_model.make_future_dataframe(periods=7)
-            p_preds = prophet_model.predict(p_future).tail(7)['yhat'].values
-
-            for i in range(1, 8):
-                f_date = last_row['DATE'] + timedelta(days=i)
-                
-                # We assume weather stays constant for the next 7 days in this simplified model
-                in_dict = {
-                    'month': f_date.month,
-                    'dayofweek': f_date.dayofweek,
-                    'lag_1': 0, # To be filled
-                    'lag_7': last_row['lag_7'],
-                    'Humidity': last_row['Humidity'],
-                    'Temperature': last_row['Temperature'],
-                    'Rainfall': last_row['Rainfall'],
-                    'Comm_Code': last_row['Comm_Code']
-                }
-                
-                in_df = pd.DataFrame([in_dict])
-                
-                # Iterative prediction for each model
-                in_df['lag_1'] = c_rf
-                pred_rf = rf.predict(in_df[features])[0]
-                
-                in_df['lag_1'] = c_xgb
-                pred_xgb = xgb.predict(in_df[features])[0]
-                
-                in_df['lag_1'] = c_lgb
-                pred_lgb = lgb.predict(in_df[features])[0]
-                
-                pred_pro = p_preds[i-1]
-                
-                # Ensemble
-                ensemble = (pred_rf + pred_xgb + pred_lgb + pred_pro) / 4
-                mapping = {
-                    "Random Forest": pred_rf, 
-                    "XGBoost": pred_xgb, 
-                    "LightGBM": pred_lgb, 
-                    "Prophet": pred_pro, 
-                    "Ensemble (Consensus)": ensemble
-                }
-                
-                forecast_data.append({"Date": f_date.strftime('%Y-%m-%d'), "Price": round(mapping[model_choice], 2)})
-                
-                # Update counters for next iteration's lag_1
-                c_rf, c_xgb, c_lgb = pred_rf, pred_xgb, pred_lgb
-
-            # Visuals
-            st.title(f"📊 {selected_commodity} Insights")
-            c1, c2 = st.columns([2, 1])
-            with c1:
-                df_ml['RF'], df_ml['XGB'], df_ml['LGB'] = rf.predict(X), xgb.predict(X), lgb.predict(X)
-                df_ml['Prophet'] = prophet_model.predict(df_p)['yhat'].values
-                df_ml['Ensemble'] = (df_ml['RF'] + df_ml['XGB'] + df_ml['LGB'] + df_ml['Prophet']) / 4
-                
-                col_map = {"Random Forest": "RF", "XGBoost": "XGB", "LightGBM": "LGB", "Prophet": "Prophet", "Ensemble (Consensus)": "Ensemble"}
-                fig = px.line(df_ml, x='DATE', y=['PRICE', col_map[model_choice]], title=f"Prediction Accuracy: {model_choice}")
-                st.plotly_chart(fig, use_container_width=True)
-
-            with c2:
-                st.subheader("📅 7-Day Prediction")
-                st.table(pd.DataFrame(forecast_data))
-                st.metric("Model Confidence (R²)", f"{r2_score(y, df_ml[col_map[model_choice]]):.3f}")
-
-            display_map_and_arbitrage(df_base, selected_state, selected_commodity, selected_market, last_row['PRICE'])
-        else:
-            st.warning("Insufficient history or missing weather data for AI training.")
-else:
-    st.info("👈 Choose a state and market in the sidebar, then click **Sync & Predict** to begin.")
+            p_future = prophet_model
