@@ -49,7 +49,7 @@ def show_hero():
 @st.cache_data
 def load_base_data():
     try:
-         script_dir = os.path.dirname(os.path.abspath(__file__))
+        script_dir = os.path.dirname(os.path.abspath(__file__))
         csv_path = os.path.join(script_dir, 'Agri_Weather_Lite.csv')
         df = pd.read_csv('csv_path')
         name_map = {'Price Date': 'DATE', 'Modal_Price': 'PRICE', 'Market Name': 'MARKET', 'STATE': 'STATE', 'Commodity': 'COMMODITY'}
