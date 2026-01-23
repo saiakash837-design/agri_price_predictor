@@ -15,7 +15,7 @@ st.set_page_config(page_title="Nada Harvest AI", layout="wide", page_icon="🌾"
 
 AGMARK_API_KEY = "579b464db66ec23bdd00000153830512e3d048f848bcb6701db55152"
 # Add your OpenWeatherMap API key here (get free key from https://openweathermap.org/api)
-WEATHER_API_KEY = "YOUR_OPENWEATHERMAP_API_KEY"  # Replace with your actual API key
+WEATHER_API_KEY = "4057d99cd50050e4e8e1e063c92cafb1"  # Replace with your actual API key
 
 CITY_COORDS = {
     "Maharashtra": {"lat": 19.7515, "lon": 75.7139},
