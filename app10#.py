@@ -12,7 +12,7 @@ from datetime import timedelta, datetime
 import time
 
 # --- CONFIGURATION & SETTINGS ---
-st.set_page_config(page_title="Nada Harvest AI", layout="wide", page_icon="🌾")
+st.set_page_config(page_title="AgroVision", layout="wide")
 
 AGMARK_API_KEY = "579b464db66ec23bdd00000153830512e3d048f848bcb6701db55152"
 WEATHER_API_KEY = "4057d99cd50050e4e8e1e063c92cafb1"
