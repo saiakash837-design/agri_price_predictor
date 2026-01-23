@@ -214,7 +214,7 @@ class ModuloBinarySearch:
 def show_hero():
     st.markdown("""
         <div style="background-color:#1E3A1E;padding:40px;border-radius:15px;text-align:center;margin-bottom:25px">
-            <h1 style="color:#FFFFFF;margin-bottom:0">🌾 NADA HARVEST AI</h1>
+            <h1 style="color:#FFFFFF;margin-bottom:0">AgroVision HARVEST AI</h1>
             <p style="color:#A8E6A1;font-size:20px;margin-top:10px">Advanced Agricultural Intelligence: Price Forecasting & Arbitrage Detection</p>
         </div>
     """, unsafe_allow_html=True)
