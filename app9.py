@@ -617,26 +617,47 @@ if st.sidebar.button("🔄 Sync & Predict"):
 
             col_table, col_metrics = st.columns([2, 1])
             
-           with col_table:
+            with col_table:
                 st.subheader(f"📅 {forecast_days}-Day Weather-Based Forecast")
-                st.dataframe(pd.DataFrame(forecast_data), use_container_width=True, height=300)
-          with col_metrics:
-            st.subheader("🎯 Model Performance")
-            r2 = r2_score(y, df_ml[col_map[model_choice]])
-            st.metric("R² Score", f"{r2:.3f}", f"{r2*100:.1f}% accuracy")
-            
-            avg_forecast = np.mean([f['Price'] for f in forecast_data])
-            price_change = avg_forecast - last_row['PRICE']
-            st.metric(f"{forecast_days}-Day Avg Forecast", f"₹{avg_forecast:.2f}", f"{price_change:+.2f}")
-            
-            st.metric("Data Points", len(df_ml))
+                forecast_df = pd.DataFrame(forecast_data)
+                st.dataframe(forecast_df, use_container_width=True, hide_index=True)
 
-        st.subheader("🌦️ Weather Forecast Impact")
-        weather_fig = px.line(pd.DataFrame(forecast_data), x='Date', 
-                             y=['Temp (°C)', 'Humidity (%)', 'Rain (mm)'],
-                             title=f"{forecast_days}-Day Weather Trends")
-        st.plotly_chart(weather_fig, use_container_width=True)
+            with col_metrics:
+                st.subheader("🎯 Model Confidence")
+                # Calculate R2 for the selected model
+                y_true = df_ml['PRICE']
+                y_pred = df_ml[col_map[model_choice]]
+                accuracy = r2_score(y_true, y_pred)
+                
+                st.metric("Model Accuracy (R²)", f"{accuracy:.2%}")
+                
+                # Price Trend Direction
+                current_p = last_row['PRICE']
+                future_p = forecast_data[-1]['Price']
+                diff = future_p - current_p
+                st.metric("7-Day Project Trend", f"₹{future_p}", f"{diff:+.2f}")
 
-        display_map_and_arbitrage(df_base, selected_state, selected_commodity, selected_market, last_row['PRICE'])
-    else:
-        st.warning("Not enough data to generate a forecast for this selection.")
+                if diff > 0:
+                    st.success("📈 Recommendation: HOLD. Prices are likely to rise.")
+                else:
+                    st.warning("📉 Recommendation: SELL. Prices may decrease.")
+
+            # --- ARBITRAGE SECTION ---
+            # Trigger the custom search algorithm defined in your class
+            display_map_and_arbitrage(
+                df_base, 
+                selected_state, 
+                selected_commodity, 
+                selected_market, 
+                last_row['PRICE']
+            )
+
+        else:
+            st.error("Insufficient historical data for this specific market/commodity to train AI models.")
+
+else:
+    st.info("👈 Select your market parameters and click 'Sync & Predict' to start the analysis.")
+
+# --- FOOTER ---
+st.markdown("---")
+st.caption("Nada Harvest AI | Powered by Modulo Binary Search & Multi-Model Ensemble")
